@@ -10,13 +10,22 @@ valid_responses: list[int] = set(valid_rolls)
 valid_responses.update([0, 1, 2, 3, 4])
 
 def roll() -> int:
+    '''Rolls two dices'''
     return valid_rolls[randint(0, 32)]
 
 def geq(a: int, b: int) -> bool:
     return valid_rolls.index(a) >= valid_rolls.index(b)
 
-def answer_valid(previous: int, current: int):
+def answer_valid(previous: int, current: int) -> bool:
     return (current in valid_responses and geq(current, previous))
+
+class Bot:
+    def __init__(self, name: str, connection):
+        self.name = name
+    def call(previous: int) -> int:
+        raise('Call procedure for bot not sat!')
+        
+
 
 if __name__ == '__main__':
     '''
