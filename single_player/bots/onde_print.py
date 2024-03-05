@@ -1,3 +1,4 @@
 def answer(previous: int, roll: int) -> int:
-    return 'Hej jeg hedder Onde Print >:)'
-
+    if previous == 4:
+        return roll
+    return 41

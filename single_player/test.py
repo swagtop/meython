@@ -10,19 +10,20 @@ valid_rolls: list[int] = [
     51, 51, 52, 52, 53, 53, 54, 54, 
     61, 61, 62, 62, 63, 63, 64, 64, 65, 65,
     11, 22, 33, 44, 55, 66, 
-    31, 21, 
-    32
+    31, 31, 21, 21, 
+    32, 32
 ]
 
-valid_responses: list[int] = set(valid_rolls)
+valid_responses: set = set(valid_rolls)
 valid_responses.update([0, 1, 2, 3, 4])
 
 def roll() -> int:
     '''Rolls two dices'''
-    return valid_rolls[randint(0, 32)]
+    return valid_rolls[randint(0, len(valid_rolls) - 1)]
 
 def geq(a: int, b: int) -> bool:
     return valid_rolls.index(a) >= valid_rolls.index(b)
+
 
 bots_path = "./bots/"
 bots = {}
@@ -45,25 +46,42 @@ def game(queue: list, start_health: int):
     history = (None,)
     health = {name: start_health for name in queue}
     
-    prev_ans = None
+    def bot_dead(bot) -> bool:
+        health[bot] -= 1
+        if health[bot] == 0:
+            return True
+        return False
+    
+    prev_ans = 4
 
-    while 1:
-        if len(queue) == 1:
-            break
+    while len(queue) > 1:
+        print(health)
 
         bot = queue.pop()
-        ans = bots[bot].answer(prev_ans, prev_ans)
+        ans = bots[bot].answer(prev_ans, 4)
         if ans == 0:
+            if prev_ans == 2:
+                prev_ans = roll()
             # Compare [-1] with [-2]
-            1
+            if geq(prev_ans, prev_ans):
+                if bot_dead(queue[0]):
+                    queue.pop(0)
+                    queue.insert(0, bot)
+            continue
+
         elif ans == 2:
             # Roll and send
             prev_ans = 2
             queue.insert(0, bot)
+            continue
         elif ans != 1:
-            # Kill bot and give [-1] another roll
-            prev_ans = None
-            queue.append(queue.pop(0))
+            # Damage bot and give [-1] another roll
+            if bot_dead(bot):
+                queue.pop(0)
+                queue.insert(0, bot)
+            else:
+                prev_ans = 4
+                queue.append(bot)
             continue
         
         ans = bots[bot].answer(roll(), prev_ans)
@@ -73,9 +91,13 @@ def game(queue: list, start_health: int):
             prev_ans = 2
             queue.insert(0, bot)
         elif ans not in valid_responses:
-            # Kill bot and give [-1] another roll
-            prev_ans = None
-            queue.append(queue.pop(0))
+            # Damage bot and give [-1] another roll
+            if bot_dead(bot):
+                queue.pop(0)
+                queue.insert(0, bot)
+            else:
+                prev_ans = 4
+                queue.append(bot)
             continue
 
         # Send ans to next bot
@@ -84,7 +106,7 @@ def game(queue: list, start_health: int):
     
     print('Winner: ', queue.pop())
 
-game(queue, 6)        
+game(queue, 600000000)        
 
 
 '''
