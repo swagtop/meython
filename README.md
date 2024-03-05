@@ -1,4 +1,4 @@
-<p style="test-align: center">
+<div align="center">
     ```
             MEYTHON
         meyer for python
@@ -14,4 +14,4 @@
 
     - - - -          - - - -
     ```
-</p>
+</div>
