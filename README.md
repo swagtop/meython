@@ -1,5 +1,3 @@
-<p align="center">
-
 ```
         MEYTHON
     meyer for python
