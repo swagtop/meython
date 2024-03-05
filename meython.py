@@ -2,11 +2,15 @@ from random import randint
 from time import time
 
 valid_rolls: list[int] = [
+    #  -->
+    # | 
+    # V   Rightmost or lowest is higher.
     41, 41, 42, 42, 43, 43, 
     51, 51, 52, 52, 53, 53, 54, 54, 
     61, 61, 62, 62, 63, 63, 64, 64, 65, 65,
     11, 22, 33, 44, 55, 66, 
-    31, 21, 32
+    31, 21, 
+    32
 ]
 
 valid_responses: list[int] = set(valid_rolls)
