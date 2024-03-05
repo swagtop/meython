@@ -2,7 +2,7 @@
         MEYTHON
     meyer for python
 
- a game where you write
+ a game where you build
  robots that play meyer
 
 - - - - Progress - - - -
