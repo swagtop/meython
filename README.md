@@ -1,15 +1,17 @@
-```
-        MEYTHON
-    meyer for python
+<p style="test-align: center">
+    ```
+            MEYTHON
+        meyer for python
 
- a game where you write
- robots that play meyer
+    a game where you write
+    robots that play meyer
 
-- - - - Progress - - - -
+    - - - - Progress - - - -
 
-cli:         ##---------
-gui:         -----------
-networking:  -----------
+    cli:         ##---------
+    gui:         -----------
+    networking:  -----------
 
-- - - -          - - - -
-```
+    - - - -          - - - -
+    ```
+</p>
