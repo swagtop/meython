@@ -31,6 +31,7 @@ bots_path = "./bots/"
 bots = {}
 queue = []
 history = []
+stats = {}
 
 for bot_file in os.listdir(bots_path):
     if bot_file.endswith('.py'):
