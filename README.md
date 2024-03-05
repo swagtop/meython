@@ -1,7 +1,12 @@
 # meython
 Meyer for Python
 
-Progress:
-cli:    ##---------
-gui:    -----------
-online: -----------
+```
+- - - - Progress - - - -
+
+cli:         ##---------
+gui:         -----------
+networking:  -----------
+
+- - - -          - - - -
+```
