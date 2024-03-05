@@ -1,7 +1,10 @@
-# meython
-Meyer for Python
-
 ```
+        MEYTHON
+    meyer for python
+
+ a game where you write
+ robots that play meyer
+
 - - - - Progress - - - -
 
 cli:         ##---------
