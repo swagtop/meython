@@ -1,17 +1,17 @@
-<div align="center">
-    ```
-            MEYTHON
-        meyer for python
+<p align="center">
 
-    a game where you write
-    robots that play meyer
+```
+        MEYTHON
+    meyer for python
 
-    - - - - Progress - - - -
+a game where you write
+robots that play meyer
 
-    cli:         ##---------
-    gui:         -----------
-    networking:  -----------
+- - - - Progress - - - -
 
-    - - - -          - - - -
-    ```
-</div>
+cli:         ##---------
+gui:         -----------
+networking:  -----------
+
+- - - -          - - - -
+```
