@@ -16,6 +16,7 @@ valid_rolls: list[int] = [
 
 valid_responses: set = set(valid_rolls)
 valid_responses.update([0, 1, 2, 3, 4])
+valid_responses.remove(32)
 
 def roll() -> int:
     '''Rolls two dices'''
@@ -28,7 +29,6 @@ def geq(a: int, b: int) -> bool:
 bots_path = "./bots/"
 bots = {}
 queue = []
-history = []
 stats = {}
 
 for bot_file in os.listdir(bots_path):
@@ -43,7 +43,7 @@ for name, bot in bots.items():
 shuffle(queue)
 
 def game(queue: list, start_health: int):
-    history = (None,)
+    history = (4,)
     health = {name: start_health for name in queue}
     
     def bot_dead(bot) -> bool:
@@ -61,9 +61,9 @@ def game(queue: list, start_health: int):
         ans = bots[bot].answer(prev_ans, 4)
         if ans == 0:
             if prev_ans == 2:
-                prev_ans = roll()
+                prev_roll = roll()
             # Compare [-1] with [-2]
-            if geq(prev_ans, prev_ans):
+            if geq(prev_roll, prev_ans):
                 if bot_dead(queue[0]):
                     queue.pop(0)
                     queue.insert(0, bot)
@@ -84,7 +84,8 @@ def game(queue: list, start_health: int):
                 queue.append(bot)
             continue
         
-        ans = bots[bot].answer(roll(), prev_ans)
+        rolled = roll()
+        ans = bots[bot].answer(rolled, prev_ans)
 
         if ans == 2:
             # Roll and send

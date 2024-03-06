@@ -7,7 +7,7 @@ programs that play meyer
 
 - - - - Progress - - - -
 
-cli:         ##---------
+tui:         ##---------
 gui:         -----------
 networking:  -----------
 
