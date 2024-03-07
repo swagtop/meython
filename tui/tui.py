@@ -3,7 +3,7 @@ from importlib import import_module
 from random import randint, shuffle
 from collections import deque
 
-roll_pool: int list = [
+roll_pool: list[int] = [
     41, 41, 42, 42, 43, 43, 
     51, 51, 52, 52, 53, 53, 54, 54, 
     61, 61, 62, 62, 63, 63, 64, 64, 65, 65,
@@ -12,7 +12,7 @@ roll_pool: int list = [
     32, 32
 ]
 
-roll_rank: int list = [
+roll_rank: list[int] = [
     # 0 is nothing, for round start.
     0,
     41, 42, 43, 51, 52, 53, 54,
@@ -47,52 +47,72 @@ def load_bots() -> None:
 
     shuffle(queue)
 
-def game(queue: list, start_health: int) -> str:
+def game(start_health: int) -> str:
     LIFT, ROLL, ABOVE = 100, 200, 300
 
     load_bots()
 
-    history = ((0,),)
+    history = (((0,),),)
     health = {name: start_health for name in queue}
 
-    def damage_bot(bot) -> None:
-        health[bot] -= 1
+    def damage_bot(bot, meyer=False) -> None:
+        if meyer == True:
+            health[bot] -= 2
+        else:
+            health[bot] -= 1
 
     def log(tup: tuple, round_over=False) -> None:
         history = history[:-1] + (history[-1] + (tup,),)
         if round_over:
             history = history + (0,)
 
-    prev_ans = 0
-
     while len(queue) > 1:
+        print(health)
+        print(history[-1])
 
         bot = queue.pop()
-        ans = bots[bot].answer()
+        ans = bots[bot].answer(0, history, dict(health))
 
         if ans == LIFT:
             #Compare [-1] with [-2]
             if geq(history[-1][-1][-1], history[-1][-2][-1]):
                 damage_bot(history[-1][-1][0])
                 log((bot, ans), round_over=True)
+                queue.append(bot)
+                queue.append(queue.pop(0))
             else:
                 damage_bot(bot)
                 log((bot, ans), round_over=True)
+                queue.append(bot)
             continue
         elif ans == ABOVE:
             #Roll and send
             log((bot, ABOVE))
+            queue.appendleft(bot)
             continue
         elif ans != ROLL:
             #Dmg bot and retry
+            damage_bot(bot)
+            log(('lol'), round_over=True)
+            queue.append(bot)
+            continue
 
-        ans = bots[bot].answer()
+        rolled = roll()
+        ans = bots[bot].answer(rolled, history, dict(health))
 
         if ans == ABOVE:
             #Roll and send
             log((bot, 200, ABOVE))
+            queue.appendleft(bot)
             continue
         elif ans not in valid_responses:
             #Dmg bot and retry
             damage_bot(bot)
+            log(('lol'), round_over=True)
+            queue.append(bot)
+            continue
         
+        log((bot, 200, ans))
+        queue.appendleft(bot)
+
+game(6)

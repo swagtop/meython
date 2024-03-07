@@ -1,5 +1,5 @@
-def answer(previous: int, roll: int) -> int:
-    if previous == 4:
+def answer(roll: int, history: tuple[tuple], health: dict[int]) -> int:
+    if history[-1][-1][-1] == 4:
         return roll
     return 41
 
