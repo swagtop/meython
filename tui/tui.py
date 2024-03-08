@@ -1,4 +1,5 @@
 from os import listdir, path
+from random import randint, shuffle
 from importlib import import_module
 from collections import deque, namedtuple
 
@@ -24,7 +25,7 @@ valid_responses.remove(32)
 
 def roll() -> int:
     '''Rolls two dices'''
-    return roll_pool[randint(0, len(valid_rolls) - 1)]
+    return roll_pool[randint(0, len(roll_pool) - 1)]
 
 def geq(a: int, b: int) -> bool:
     return roll_rank.index(a) >= roll_rank.index(b)
@@ -43,6 +44,8 @@ def load_bots():
     for name, bot in bots.items():
         queue.append(name)
 
+    shuffle(queue)
+
 def game(max_health=6, normal_damage=1, meyer_damage=2):
     from random import randint, shuffle
     MAX_HEALTH = max_health
@@ -58,7 +61,9 @@ def game(max_health=6, normal_damage=1, meyer_damage=2):
 
     in_cup = None
 
-    history = ((LogEntry(None, 0, 'b'), ), )
+    history = (
+        (LogEntry(None, 0, 'b'), ),
+    )
     health = {name: MAX_HEALTH for name in queue}
     
     def damage(bot: str, amount: int):
@@ -70,9 +75,9 @@ def game(max_health=6, normal_damage=1, meyer_damage=2):
     def log(entry: tuple, continue_round=False):
         nonlocal history
         print(entry)
-        history = history[:-1] + (history[-1] + entry)
+        history = history[:-1] + (history[-1] + (entry,),)
         if not continue_round:
-            history = history + (LogEntry(None, 0, 'b'),)
+            history = history + ((LogEntry(None, 0, 'b'),),)
             in_cup = None
 
     while len(queue) > 1:
@@ -158,18 +163,25 @@ def game(max_health=6, normal_damage=1, meyer_damage=2):
             # ROLL AND SEND
             log(LogEntry(bot, 'ABOVE', 'ra'), continue_round=True)
             queue.rotate(1)
+            continue
+
+        elif ans == 'ROLL':
+            # DAMAGE BOT
+            damage(bot, NORMAL_DAMAGE)
+            log(LogEntry(bot, ans, 'rcdi'))
+            continue
 
         elif ans not in valid_responses:
             # DAMAGE BOT
             damage(bot, NORMAL_DAMAGE)
             log(LogEntry(bot, ans, 'rcdi'))
+            continue
 
         else:
             log(LogEntry(bot, ans, 'rs'), continue_round=True)
             queue.rotate(1)
     
+    print('History:\n', history)
     print('Winner is: ', queue[0])
 
 game()
-
-    
