@@ -1,7 +1,3 @@
-import os
-from importlib import import_module
-from random import randint, shuffle
-from collections import deque, namedtuple
 
 roll_pool: list[int] = [
     41, 41, 42, 42, 43, 43, 
@@ -32,117 +28,116 @@ def geq(a: int, b: int) -> bool:
 
 bots_path = "./bots/"
 bots: dict = {}
-queue = deque()
 
-def load_bots() -> None:
-    for bot_file in os.listdir(bots_path):
+def load_bots() -> deque:
+    from os import listdir, path
+    from importlib import import_module
+    from collections import deque
+    queue = deque()
+    for bot_file in listdir(bots_path):
         if bot_file.endswith('.py'):
-            bot_name = os.path.splitext(bot_file)[0]
+            bot_name = path.splitext(bot_file)[0]
             
             bots[bot_name] = import_module(f'bots.{bot_name}')
 
     for name, bot in bots.items():
         queue.append(name)
+    return queue
 
-    shuffle(queue)
 
-def game(start_health: int) -> str:
-    # Non roll-declaration bot actions
-    LIFT, ROLL, ABOVE = 100, 200, 300
+def game(max_health=6, normal_damage=1, meyer_damage=2)
+    from random import randint, shuffle
+    MAX_HEALTH = max_health
+    NORMAL_DAMAGE = normal_damage
+    MEYER_DAMAGE = meyer_damage
 
-    # Reasons for bots taking damage
-    LIED, WRONG, GIBBERISH, EXCEPTION = 111, 222, 333, 444
-
-    # Game events
-    LIFE_ROLLED, DESTROYED = 555, 666
-
-    load_bots()
-
-    RoundStart = namedtuple(
-        'RoundStart',
-        ['bot', 'answer', 'type'],
-        defaults = [None, 0, 'round_start']
-    )
-    BotAction = namedtuple(
-        'BotAction', 
-        ['bot', 'answer', 'looked', 'type'],
-        defaults = [None, None, False, 'bot_action']
-    )
-    DamageTaken = namedtuple(
-        'DamageTaken',
-        ['bot', 'reason', 'amount', 'type'],
-        defaults = [None, None, None, 'damage_event']
-    )
-    LifeRoll = namedtuple(
-        'LifeRoll',
-        ['bot', 'result', 'type'],
-        defaults = [None, None, 'life_roll']
-    )
-    GameEvent = namedtuple(
-        'GameEvent', 
-        ['bot', 'answer', 'code', 'type'],
-        defaults = [None, None, None, 'game_event']
+    LogEntry = namedtuple(
+        'LogEntry',
+        ['bot', 'answer', 'events']
     )
 
-    history = ((GameEvent(answer=0),),)
+    in_cup = None
+
+    queue = shuffle(load_bots())
+    history = ((LogEntry(None, 0, 'b'), ), )
+    health = {name: MAX_HEALTH for name in queue}
     
-    health = {name: start_health for name in queue}
-
-    def log(event: namedtuple, round_over=False) -> None:
-        history = history[:-1] + (history[-1] + event)
+    def damage(bot: str, amount: int):
+        health[bot] -= amount
+    
+    def log(entry: tuple, round_over=False):
+        history = history[:-1] + (history[-1] + entry)
         if round_over:
-            history = history + (GameEvent(answer=0),)
-    
-    def damage_bot(bot, meyer=False) -> None:
-        log(bot, code=TOOK_DMG)
-        if meyer == True:
-            health[bot] -= 2
-        else:
-            health[bot] -= 1
+            history = history + (LogEntry(None, 0, 'b'),)
 
     while len(queue) > 1:
-        print(health)
-        print(history)
 
-        bot = queue.pop()
-        ans = bots[bot].answer(0, history, dict(health))
+        bot = queue[-1]
+        try:
+            ans = bots[bot].answer(0, history, dict(health))
+        except Exception:
+            # DAMAGE BOT
+            damage(bot, NORMAL_DAMAGE)
+            log(LogEntry(bot, None, 'cde'))
+            continue
 
         if ans is 'LIFT':
-            log(BotAction(bot, answer=LIFT))
+            if in_cup is None:
+                # DAMAGE BOT
+                damage(bot, NORMAL_DAMAGE)
+                log(LogEntry(bot, 'LIFT', 'lcdi'))
+                continue
+            
+            prev_bot = history[-1][-1]
+            prev_prev_bot = history[-1][-2]
 
-            prev_ans = history[-1][-1].answer
-            if prev_ans == ABOVE:
-                prev_ans = roll()
+            if prev_ans is 'ABOVE':
+                in_cup = roll()
 
-            if geq(prev_ans, history[-1][-2].answer):
-                queue.pop(0)
-                prev_bot = history[-1][-2].bot
-                damage_bot(prev_bot)
-                queue.append(bot)
-                if not health[prev_bot] > 0:
-                    log(prev_bot, code=DIED)
-                    continue
-                queue.append(prev_bot)
+                if not geq(in_cup, prev_prev_bot.answer):
+                    # DAMAGE LAST BOT
+                    damage(prev_bot, NORMAL_DAMAGE)
+                    log(LogEntry(bot, 'LIFT', f'lpdt {in_cup}'))
+                    queue.rotate(-1)
+                else:
+                    # DAMAGE BOT
+                    damage(bot, NORMAL_DAMAGE)
+                    log(LogEntry(bot, 'LIFT', f'lcdf {in_cup}'))
+                continue
+            
             else:
-                damage_bot(bot)
-                if not health[bot] > 0:
-                    log(bot, code=DIED)
-                    continue
-                queue.append(bot)
-            continue
-        
+                if not geq(in_cup, prev_bot.answer):
+                    # DAMAGE LAST BOT
+                    damage(prev_bot, NORMAL_DAMAGE)
+                    log(LogEntry(bot, 'LIFT', f'lpdl {in_cup}'))
+                    queue.rotate(-1)
+                else:
+                    # DAMAGE BOT
+            
+            else:
+                if not geq(in_cup, prev_prev_bot.answer):
+                    # DAMAGE LAST BOT
+                    queue.rotate(-1)
+                else:
+                    # DAMAGE BOT
+
         elif ans is 'ABOVE':
-            log(BotAction(bot, answer=ABOVE))
-            queue.appendleft(bot)
-            continue
-        
+            # ROLL AND SEND
+
         elif ans is not 'ROLL':
-            log(GameEvent(bot, ans))
+            # DAMAGE BOT
+
+        in_cup = roll()
+        try:
+            ans = bots[bot].answer(in_cup, history, dict(health))
+        except Exception:
+            # DAMAGE BOT
+
+        if ans is 'ABOVE':
+            # ROLL AND SEND
+
+        if ans not in valid_responses:
+            # DAMAGE BOT
 
 
-
-                
-
-
-
-game(6)
+    

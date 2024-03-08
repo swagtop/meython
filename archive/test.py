@@ -16,7 +16,6 @@ valid_rolls: list[int] = [
 
 valid_responses: set = set(valid_rolls)
 valid_responses.update([0, 1, 2, 3, 4])
-valid_responses.remove(32)
 
 def roll() -> int:
     '''Rolls two dices'''
