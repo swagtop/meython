@@ -1,0 +1,32 @@
+round initiation:
+'b' = beginning of round
+
+bot responses:
+'r' = rolled
+'l' = lift
+'a' = above or equal the previous
+'s' = say roll
+
+specifying:
+'c' = current bot
+'p' = previous bot 
+'d' = takes damage
+'w' = wins game
+
+damage reasons:
+'t' = too low
+'f' = failed lift
+'u' = untrue answer
+'i' = invalid response
+'e' = answer raised exception
+
+amount:
+'n' = normal amount
+'m' = meyer amount
+
+in cup:
+' 21' = when the cup is lifted, the
+        contents are revealed at the
+        end of the string, separated 
+        from the rest of the events
+        by a single space 
