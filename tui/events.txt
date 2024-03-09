@@ -12,6 +12,8 @@ specifying:
 'p' = previous bot 
 'd' = takes damage
 'w' = wins game
+'x' = bot loses
+'h' = rolls for health
 
 damage reasons:
 't' = too low
@@ -19,6 +21,7 @@ damage reasons:
 'u' = untrue answer
 'i' = invalid response
 'e' = answer raised exception
+'z' = bot was too slow at answering
 
 amount:
 'n' = normal amount

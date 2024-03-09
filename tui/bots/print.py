@@ -1,6 +1,6 @@
 MY_NAME = ''
 
-def answer(roll: int, history: tuple[tuple], health: dict[int]) -> int | str:
+def answer(roll: int, previous: tuple, history: tuple, health: dict):
     if history[-1][-1].answer:
         return 'ABOVE'
     else:

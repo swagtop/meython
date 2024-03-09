@@ -46,142 +46,180 @@ def load_bots():
 
     shuffle(queue)
 
-def game(max_health=6, normal_damage=1, meyer_damage=2):
+def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
     from random import randint, shuffle
     MAX_HEALTH = max_health
+    HALFWAY = max_health // 2
     NORMAL_DAMAGE = normal_damage
     MEYER_DAMAGE = meyer_damage
+    TIMEOUT_SECONDS = timeout_seconds
 
     LogEntry = namedtuple(
         'LogEntry',
-        ['bot', 'answer', 'events']
+        ['bot', 'answer', 'events', 'previous']
     )
 
     load_bots()
 
-    in_cup = None
-
     history = (
-        (LogEntry(None, 0, 'b'), ),
+        (LogEntry(None, 0, 'b', None), ),
     )
     health = {name: MAX_HEALTH for name in queue}
     
-    def damage(bot: str, amount: int):
-        print(bot, 'takes', amount, 'damage')
-        health[bot] -= amount
-        if health[bot] < 1:
+    def damage(bot: str, slot_one=None, slot_two=None, slot_three=None) -> str:
+        '''
+        Damages bot, and returns characters to attatch to event string,
+        that documents if the damage taken was normal, or meyer, and
+        attatches an h or x depending on if the bot rolled for health,
+        or died.
+        '''
+        ev = ''
+        if slot_one == 21 or slot_two == 21 or slot_three == 21:
+            ev += 'm'
+            health[bot] -= MEYER_DAMAGE
+        else:
+            ev += 'n'
+            health[bot] -= NORMAL_DAMAGE
+
+        if health[bot] < 0:
             queue.remove(bot)
+            return ev + 'x'
+        elif health[bot] == HALFWAY:
+            rolls = bots[bot].roll_health()
+            if rolls:
+                health[bot] = randint(1, MAX_HEALTH)
+                return ev + 'h'
+            else:
+                return ev
+
+        print('BOT:', bot, 'EV:', ev)
+        return ev
     
-    def log(entry: tuple, continue_round=False):
+    def log(bot: str, answer: int, events: str, continue_round=False):
         nonlocal history
-        print(entry)
-        history = history[:-1] + (history[-1] + (entry,),)
+        history = history[:-1] + (
+            history[-1] + ((
+                LogEntry(
+                    bot, 
+                    answer, 
+                    events, 
+                    history[-1][-1]
+                )
+            ),),
+        )
         if not continue_round:
-            history = history + ((LogEntry(None, 0, 'b'),),)
+            history = history + ((
+                (LogEntry(None, 0, 'b', None),),
+            ),)
             in_cup = None
+    
+    def print_history(history: tuple):
+        i = 1
+        for round in history:
+            print('# ROUND', i)
+            i += 1
+            print(round)
+            #for turn in round:
+            #    print(f'BOT: {turn.bot} SAYS {turn.answer}, EV: {turn.events}')
+
+    in_cup = None
+    last_known = None
 
     while len(queue) > 1:
-
+        ev = ''
         bot = queue[-1]
+        prev = history[-1][-1]
+
         try:
-            ans = bots[bot].answer(0, history, dict(health))
-        except Exception:
+            ans = bots[bot].answer(0, prev, history, dict(health))
+        except Exception as e:
             # DAMAGE BOT
-            damage(bot, NORMAL_DAMAGE)
-            log(LogEntry(bot, None, 'cde'))
+            print(e)
+            ev += 'cde' + damage(bot)
+            log(bot, None, ev)
             continue
+        
+        if ans == 'LIFT' and (in_cup == None or prev.answer == 0):
+            # DAMAGE BOT
+            ev += 'lcdi' + damage(bot)
+            log(bot, 'LIFT', ev)
+            continue
+        
+        if ans == 'LIFT' and prev.answer == 'ABOVE':
+            in_cup = roll()
 
-        if ans == 'LIFT':
-            if in_cup is None:
-                # DAMAGE BOT
-                damage(bot, NORMAL_DAMAGE)
-                log(LogEntry(bot, 'LIFT', 'lcdi'))
-                continue
-            
-            prev_bot = history[-1][-1]
-            prev_prev_bot = history[-1][-2]
-
-            if prev_ans == 'ABOVE':
-                in_cup = roll()
-
-                if not geq(in_cup, prev_prev_bot.answer):
-                    # DAMAGE LAST BOT
-                    damage(prev_bot, NORMAL_DAMAGE)
-                    log(LogEntry(bot, 'LIFT', f'lpdt {in_cup}'))
-                    queue.rotate(-1)
-                else:
-                    # DAMAGE BOT
-                    damage(bot, NORMAL_DAMAGE)
-                    log(LogEntry(bot, 'LIFT', f'lcdf {in_cup}'))
-            
-            else:
-                if not geq(in_cup, prev_bot.answer):
-                    # DAMAGE LAST BOT
-                    damage(prev_bot, NORMAL_DAMAGE)
-                    log(LogEntry(bot, 'LIFT', f'lpdu {in_cup}'))
-                    queue.rotate(-1)
-                else:
-                    # DAMAGE BOT
-                    damage(bot, NORMAL_DAMAGE)
-                    log(LogEntry(bot, 'LIFT', f'lcdf {in_cup}'))
-                continue
-
-            if not geq(in_cup, prev_prev_bot.answer):
+            if not geq(in_cup, last_known):
                 # DAMAGE LAST BOT
-                damage(prev_bot, NORMAL_DAMAGE)
-                log(LogEntry(bot, 'LIFT', f'lpdt {in_cup}'))
-                queue.rotate(-1)
+                ev += 'lpdt' + damage(prev.bot, in_cup, last_known) + f' {in_cup}'
             else:
                 # DAMAGE BOT
-                damage(bot, NORMAL_DAMAGE)
-                log(LogEntry(bot, 'LIFT', f'lpdf {in_cup}'))
+                ev += 'lcdf' + damage(bot, in_cup, last_known) + f' {in_cup}'
+            log(bot, 'LIFT', ev)
             continue
-
-        elif ans == 'ABOVE':
+        
+        if ans == 'LIFT' and prev.answer != 'ABOVE':
+            if not geq(in_cup, prev.answer):
+                # DAMAGE LAST BOT
+                ev += 'lpdt' + damage(prev.bot, in_cup, prev.answer, prev.previous.answer) + f' {in_cup}'
+            else:
+                # DAMAGE BOT
+                ev += 'lcdf' + damage(bot, in_cup, prev.answer, prev.previous.answer) + f' {in_cup}'
+            log(bot, 'LIFT', ev)
+            continue
+            
+        if ans == 'ABOVE' and prev.answer == 0:
+            # DAMAGE BOT
+            ev += 'acdi' + damage(bot)
+            log(bot, 'ABOVE', ev)
+            continue
+        
+        if ans == 'ABOVE' and prev.answer != 0:
             # ROLL AND SEND
-            log(LogEntry(bot, 'ABOVE', 'a'), continue_round=True)
+            ev += 'a'
+            if prev.answer != 'ABOVE':
+                last_known = prev.answer
+            log(bot, 'ABOVE', ev, continue_round=True)
             queue.rotate(1)
             continue
 
-        elif ans != 'ROLL':
+        if not ans == 'ROLL':
             # DAMAGE BOT
-            damage(bot, NORMAL_DAMAGE)
-            log(LogEntry(bot, ans, 'cdi'))
+            ev += 'rdci'
+            log(bot, ans, ev)
             continue
-
 
         in_cup = roll()
         try:
-            ans = bots[bot].answer(in_cup, history, dict(health))
+            ans = bots[bot].answer(in_cup, prev, history, dict(health))
         except Exception:
             # DAMAGE BOT
-            damage(bot, NORMAL_DAMAGE)
-            log(LogEntry(bot, None, 'rcde'))
+            ev += 'cde' + damage(bot, prev.answer)
+            log(bot, None, ev)
             continue
+        ev += 'r'
 
         if ans == 'ABOVE':
             # ROLL AND SEND
-            log(LogEntry(bot, 'ABOVE', 'ra'), continue_round=True)
+            ev += 'a'
+            log(bot, 'ABOVE', ev, continue_round=True)
             queue.rotate(1)
             continue
 
-        elif ans == 'ROLL':
+        if ans == 'ROLL' or ans == 'LIFT' or ans not in valid_responses:
             # DAMAGE BOT
-            damage(bot, NORMAL_DAMAGE)
-            log(LogEntry(bot, ans, 'rcdi'))
+            if ans == 'ROLL':
+                ev += 'r'
+            elif ans == 'LIFT':
+                ev += 'l'
+            ev += 'dci' + damage(bot, prev.answer)
+            log(bot, ans, ev)
             continue
 
-        elif ans not in valid_responses:
-            # DAMAGE BOT
-            damage(bot, NORMAL_DAMAGE)
-            log(LogEntry(bot, ans, 'rcdi'))
-            continue
-
-        else:
-            log(LogEntry(bot, ans, 'rs'), continue_round=True)
-            queue.rotate(1)
+        ev += 's'
+        log(bot, ans, ev, continue_round=True)
+        queue.rotate(1)
     
-    print('History:\n', history)
+    print_history(history)
     print('Winner is: ', queue[0])
 
 game()
