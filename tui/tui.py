@@ -33,6 +33,7 @@ def geq(a: int, b: int) -> bool:
 bots_path = "./bots/"
 bots: dict = {}
 queue = deque()
+has_rolled = set()
 
 def load_bots():
     for bot_file in listdir(bots_path):
@@ -62,7 +63,7 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
     load_bots()
 
     history = (
-        (LogEntry(None, 0, 'b', None), ),
+        tuple(),
     )
     health = {name: MAX_HEALTH for name in queue}
     
@@ -84,7 +85,8 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
         if health[bot] < 0:
             queue.remove(bot)
             return ev + 'x'
-        elif health[bot] == HALFWAY:
+        elif health[bot] == HALFWAY and bot not in has_rolled:
+            has_rolled.update(bot)
             rolls = bots[bot].roll_health()
             if rolls:
                 health[bot] = randint(1, MAX_HEALTH)
@@ -97,41 +99,69 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
     
     def log(bot: str, answer: int, events: str, continue_round=False):
         nonlocal history
+        nonlocal round_start
+        if round_start:
+            previous = LogEntry(None, 0, 'b', None)
+        else:
+            previous = history[-1][-1]
         history = history[:-1] + (
             history[-1] + ((
                 LogEntry(
                     bot, 
                     answer, 
                     events, 
-                    history[-1][-1]
+                    previous
                 )
             ),),
         )
         if not continue_round:
-            history = history + ((
-                (LogEntry(None, 0, 'b', None),),
-            ),)
+            history = history + (
+                tuple(),
+            )
+            round_start = True
             in_cup = None
     
     def print_history(history: tuple):
         i = 1
         for round in history:
-            print('# ROUND', i)
+            print('ROUND:', i)
             i += 1
-            print(round)
-            #for turn in round:
-            #    print(f'BOT: {turn.bot} SAYS {turn.answer}, EV: {turn.events}')
+            for turn in round:
+                print(f'BOT: {turn.bot} SAYS {turn.answer}, EV: {turn.events}')
 
+    round_start = True
     in_cup = None
     last_known = None
 
     while len(queue) > 1:
         ev = ''
         bot = queue[-1]
+
+        if round_start:
+            try:
+                in_cup = roll()
+                ans = bots[bot].begin(in_cup, history, dict(health))
+                if type(ans) != int:
+                    # DAMAGE BOT
+                    ev += 'bscdi' + damage(bot)
+                    log(bot, ans, ev)
+                    continue
+                ev += 'bs'
+                log(bot, ans, ev, continue_round=True)
+                queue.rotate(1)
+                round_start = False
+                continue
+            except Exception as e:
+                # DAMAGE BOT
+                print(e)
+                ev += 'bcde' + damage(bot)
+                log(bot, None, ev)
+                continue
+
         prev = history[-1][-1]
 
         try:
-            ans = bots[bot].answer(0, prev, history, dict(health))
+            ans = bots[bot].decide(prev, history, dict(health))
         except Exception as e:
             # DAMAGE BOT
             print(e)
@@ -184,13 +214,13 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
 
         if not ans == 'ROLL':
             # DAMAGE BOT
-            ev += 'rdci'
+            ev += 'rcdi'
             log(bot, ans, ev)
             continue
 
         in_cup = roll()
         try:
-            ans = bots[bot].answer(in_cup, prev, history, dict(health))
+            ans = bots[bot].decide(in_cup, prev, history, dict(health))
         except Exception:
             # DAMAGE BOT
             ev += 'cde' + damage(bot, prev.answer)
@@ -211,7 +241,7 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
                 ev += 'r'
             elif ans == 'LIFT':
                 ev += 'l'
-            ev += 'dci' + damage(bot, prev.answer)
+            ev += 'cdi' + damage(bot, prev.answer)
             log(bot, ans, ev)
             continue
 

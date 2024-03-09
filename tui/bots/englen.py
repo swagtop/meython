@@ -12,18 +12,17 @@ def geq(a: int, b: int) -> bool:
 
 roll_bank = []
 
-def answer(roll: int, previous: tuple, history: tuple[tuple], health: dict):
-    prev = history[-1][-1]
-    prev_prev = history[-1][-2]
-    if roll != 0:
-        return 'LIFT'
-    else:
-        if roll_bank.count('ABOVE') < 4:
-            roll_bank.append('ABOVE')
-            return 'ABOVE'
-        else:
-            return 'LIFT'
+def begin(rolled, history, health):
+    return rolled
 
+def decide(previous, history, health):
+    return 'ABOVE'
+
+def answer(rolled: int, previous: tuple, history: tuple[tuple], health: dict):
+    return 'ABOVE'
 
 def roll_health():
     return True
+
+def init():
+    return
