@@ -171,7 +171,7 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     
     def print_history(history: tuple):
         i = 1
-        for round in history[1:][:-1]:
+        for round in history[:-1]:
             print('\n|- ROUND', i)
             i += 1
             for entry in round:
@@ -335,4 +335,4 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     print('\n|- Winner is:', queue[0], 'with', health[queue[0]], 'health!')
     import os, psutil; print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
 
-game(max_health=6000)
+game(max_health=6)
