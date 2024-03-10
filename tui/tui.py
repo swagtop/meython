@@ -19,9 +19,13 @@ roll_rank: list[int] = [
     33, 44, 55, 66, 31, 21, 32
 ]
 
-valid_responses: set = set(roll_pool)
-valid_responses.update(['LIFT', 'ROLL', 'ABOVE'])
-valid_responses.remove(32)
+valid_begin: set = set(roll_pool)
+valid_begin.remove(32)
+
+valid_decide: set = set(['LIFT', 'ROLL', 'ABOVE'])
+
+valid_answer: set = set(valid_begin)
+valid_answer.update(['ABOVE'])
 
 def roll() -> int:
     '''Rolls two dices'''
@@ -47,7 +51,7 @@ def load_bots():
 
     shuffle(queue)
 
-def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
+def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     from random import randint, shuffle
     MAX_HEALTH = max_health
     HALFWAY = max_health // 2
@@ -94,7 +98,6 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
             else:
                 return ev
 
-        print('BOT:', bot, 'EV:', ev)
         return ev
     
     def log(bot: str, answer: int, events: str, continue_round=False):
@@ -134,30 +137,45 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
     last_known = None
 
     while len(queue) > 1:
+        print(queue)
+
         ev = ''
         bot = queue[-1]
 
         if round_start:
-            try:
-                in_cup = roll()
-                ans = bots[bot].begin(in_cup, history, dict(health))
-                if type(ans) != int:
-                    # DAMAGE BOT
-                    ev += 'bscdi' + damage(bot)
-                    log(bot, ans, ev)
-                    continue
-                ev += 'bs'
-                log(bot, ans, ev, continue_round=True)
-                queue.rotate(1)
-                round_start = False
-                continue
-            except Exception as e:
-                # DAMAGE BOT
-                print(e)
-                ev += 'bcde' + damage(bot)
+            ev += 'b'
+            in_cup = roll()
+            if in_cup == 32:
+                ev += 'g'
                 log(bot, None, ev)
                 continue
+            try:
+                ans = bots[bot].begin(in_cup, history, dict(health))
+            except (Exception, SystemExit) as e:
+                # DAMAGE BOT
+                print(e)
+                ev += 'cde' + damage(bot)
+                log(bot, None, ev)
+                continue
+            except TimeoutError as e:
+                # DAMAGE BOT
+                print(e)
+                ev += 'cdz' + damage(bot)
+                log(bot, None, ev)
+                print(e)
+                continue
 
+            if ans not in valid_begin:
+                # DAMAGE BOT
+                ev += 'scdi' + damage(bot)
+                log(bot, ans, ev)
+                continue
+            ev += 's'
+            log(bot, ans, ev, continue_round=True)
+            queue.rotate(1)
+            round_start = False
+            continue
+        
         prev = history[-1][-1]
 
         try:
@@ -167,6 +185,11 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
             print(e)
             ev += 'cde' + damage(bot)
             log(bot, None, ev)
+            continue
+        if ans not in valid_decide:
+            # DAMAGE BOT
+            ev += 'cdi' + damage(bot)
+            log(bot, ans, ev)
             continue
         
         if ans == 'LIFT' and (in_cup == None or prev.answer == 0):
@@ -218,24 +241,20 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
             log(bot, ans, ev)
             continue
 
+        ev += 'r'
         in_cup = roll()
+        if in_cup == 32:
+            ev += 'g'
+            log(bot, None, ev)
+            continue
         try:
-            ans = bots[bot].decide(in_cup, prev, history, dict(health))
-        except Exception:
+            ans = bots[bot].answer(in_cup, prev, history, dict(health))
+        except (Exception, SystemExit):
             # DAMAGE BOT
             ev += 'cde' + damage(bot, prev.answer)
             log(bot, None, ev)
             continue
-        ev += 'r'
-
-        if ans == 'ABOVE':
-            # ROLL AND SEND
-            ev += 'a'
-            log(bot, 'ABOVE', ev, continue_round=True)
-            queue.rotate(1)
-            continue
-
-        if ans == 'ROLL' or ans == 'LIFT' or ans not in valid_responses:
+        if ans == 'ROLL' or ans == 'LIFT':
             # DAMAGE BOT
             if ans == 'ROLL':
                 ev += 'r'
@@ -244,6 +263,18 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
             ev += 'cdi' + damage(bot, prev.answer)
             log(bot, ans, ev)
             continue
+        if ans not in valid_answer:
+            # DAMAGE BOT
+            ev += 'cdi' + damage(bot, prev.answer)
+            log(bot, ans, ev)
+            continue
+        if ans == 'ABOVE':
+            # ROLL AND SEND
+            ev += 'a'
+            log(bot, 'ABOVE', ev, continue_round=True)
+            queue.rotate(1)
+            continue
+
 
         ev += 's'
         log(bot, ans, ev, continue_round=True)
@@ -251,5 +282,6 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=10):
     
     print_history(history)
     print('Winner is: ', queue[0])
+    print('Health:\n', health[queue[0]])
 
-game()
+game(max_health=6)

@@ -10,10 +10,13 @@ bot responses:
 specifying:
 'c' = current bot
 'p' = previous bot 
+
+events:
 'd' = takes damage
 'w' = wins game
 'x' = bot loses
 'h' = rolls for health
+'g' = group toast rolled
 
 damage reasons:
 't' = too low
