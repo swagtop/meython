@@ -52,47 +52,47 @@ def load_bots():
     shuffle(queue)
 
 def parse_entry(entry: tuple) -> str:
-    result = f'{entry.bot} '
+    result = f'{f'[{entry.bot}]' : >8} '
     for character in entry.events:
         match character:
             case 'b':
-                result += 'begins round, '
+                result += 'BEGIN, '
             case 's':
-                result += f'says they rolled {entry.answer}'
+                result += f'ANS {entry.answer} '
             case 'r':
-                result += 'rolls and looks into the cup, '
+                result += 'ROLLS, '
             case 'a':
-                result += 'says above, rolls and sends'
+                result += 'ABOVE'
             case 'l':
-                result += 'lifts the cup, '
+                result += 'LIFTS, '
             case 'b':
-                result += 'its group toast!'
+                result += 'GROUP TOAST!'
             case 'c':
-                result += 'takes '
+                result += 'THIS BOT '
             case 'p':
-                result += 'deals '
+                result += 'PREV BOT '
             case 'n':
-                result += 'normal damage, '
+                result += 'TAKES NORMAL DMG, '
             case 'm':
-                result += 'meyer damage, '
+                result += 'TAKES MEYER DMG, '
             case 't':
-                result += 'because they rolled too low'
+                result += 'TOO LOW, '
             case 'f':
-                result += 'because they were wrong'
+                result += 'WRONG, '
             case 'u':
-                result += 'because they lied'
+                result += 'LIED, '
             case 'i':
-                result += 'because of invalid response'
+                result += 'INVALID RESPONSE, '
             case 'e':
-                result += 'because of exception'
+                result += 'EXCEPTION, '
             case 'z':
-                result += 'because they were too slow'
+                result += 'TOO SLOW, '
             case 'x':
-                result += ', and dies!'
+                result += 'AND DIES!! '
             case 'h':
-                result += ', and rolls for health'
+                result += 'ROLLS FOR HEALTH! '
             case ' ':
-                result += f', {entry.events.split()[1]} was in the cup.'
+                result += f'IN CUP: {entry.events.split()[1]}'
     return result
 
 def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
@@ -135,7 +135,7 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
             return ev + 'x'
         elif health[bot] == HALFWAY and bot not in has_rolled:
             has_rolled.update(bot)
-            rolls = bots[bot].roll_health()
+            rolls = bots[bot].roll_health(history, health)
             if rolls:
                 health[bot] = randint(1, MAX_HEALTH)
                 return ev + 'h'
@@ -170,8 +170,8 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     
     def print_history(history: tuple):
         i = 1
-        for round in history:
-            print('ROUND:', i)
+        for round in history[1:][:-1]:
+            print('\n|- ROUND', i)
             i += 1
             for entry in round:
                 print(parse_entry(entry))
@@ -181,7 +181,6 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     last_known = None
 
     while len(queue) > 1:
-        print(queue)
 
         ev = ''
         bot = queue[-1]
@@ -255,9 +254,14 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
             continue
         
         if ans == 'LIFT' and prev.answer != 'ABOVE':
-            if not geq(in_cup, prev.answer):
+            if not geq(prev.answer, prev.previous.answer):
                 # DAMAGE LAST BOT
                 ev += 'lpdt' + damage(prev.bot, in_cup, prev.answer, prev.previous.answer) + f' {in_cup}'
+                log(bot, 'LIFT', ev)
+                continue
+            if not geq(in_cup, prev.answer):
+                # DAMAGE LAST BOT
+                ev += 'lpdu' + damage(prev.bot, in_cup, prev.answer, prev.previous.answer) + f' {in_cup}'
             else:
                 # DAMAGE BOT
                 ev += 'lcdf' + damage(bot, in_cup, prev.answer, prev.previous.answer) + f' {in_cup}'
@@ -327,7 +331,6 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
         queue.rotate(1)
     
     print_history(history)
-    print('Winner is: ', queue[0])
-    print('Health:\n', health[queue[0]])
+    print('\n|- Winner is:', queue[0], 'with', health[queue[0]], 'health!')
 
 game(max_health=6)

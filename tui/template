@@ -1,0 +1,24 @@
+#---------------------------- YOUR FUNCTIONS HERE ----------------------------#
+
+
+
+
+#---------------------------- CORE FUNCTIONS HERE ----------------------------#
+ans = int | str
+
+def init():
+    return
+
+def begin(rolled: int, history: tuple, health: dict) -> ans:
+    return rolled
+
+def decide(previous: tuple, history: tuple, health: dict) -> ans:
+    return 'ROLL'
+
+def answer(rolled: int, previous: tuple, history: tuple, health: dict) -> ans:
+    return rolled
+
+def roll_health(history: tuple, health: dict) -> bool:
+    return True
+
+#-----------------------------------------------------------------------------#
