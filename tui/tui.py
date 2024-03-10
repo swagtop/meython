@@ -34,7 +34,7 @@ def roll() -> int:
 def geq(a: int, b: int) -> bool:
     return roll_rank.index(a) >= roll_rank.index(b)
 
-bots_path = "./bots/"
+bots_path = path.join(path.dirname(path.abspath(__file__)), "bots")
 bots: dict = {}
 queue = deque()
 has_rolled = set()
@@ -50,6 +50,50 @@ def load_bots():
         queue.append(name)
 
     shuffle(queue)
+
+def parse_entry(entry: tuple) -> str:
+    result = f'{entry.bot} '
+    for character in entry.events:
+        match character:
+            case 'b':
+                result += 'begins round, '
+            case 's':
+                result += f'says they rolled {entry.answer}'
+            case 'r':
+                result += 'rolls and looks into the cup, '
+            case 'a':
+                result += 'says above, rolls and sends'
+            case 'l':
+                result += 'lifts the cup, '
+            case 'b':
+                result += 'its group toast!'
+            case 'c':
+                result += 'takes '
+            case 'p':
+                result += 'deals '
+            case 'n':
+                result += 'normal damage, '
+            case 'm':
+                result += 'meyer damage, '
+            case 't':
+                result += 'because they rolled too low'
+            case 'f':
+                result += 'because they were wrong'
+            case 'u':
+                result += 'because they lied'
+            case 'i':
+                result += 'because of invalid response'
+            case 'e':
+                result += 'because of exception'
+            case 'z':
+                result += 'because they were too slow'
+            case 'x':
+                result += ', and dies!'
+            case 'h':
+                result += ', and rolls for health'
+            case ' ':
+                result += f', {entry.events.split()[1]} was in the cup.'
+    return result
 
 def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     from random import randint, shuffle
@@ -129,8 +173,8 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
         for round in history:
             print('ROUND:', i)
             i += 1
-            for turn in round:
-                print(f'BOT: {turn.bot} SAYS {turn.answer}, EV: {turn.events}')
+            for entry in round:
+                print(parse_entry(entry))
 
     round_start = True
     in_cup = None
@@ -270,6 +314,8 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
             continue
         if ans == 'ABOVE':
             # ROLL AND SEND
+            if prev.answer != 'ABOVE':
+                last_known = prev.answer
             ev += 'a'
             log(bot, 'ABOVE', ev, continue_round=True)
             queue.rotate(1)
