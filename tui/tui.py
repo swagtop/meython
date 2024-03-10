@@ -1,3 +1,4 @@
+import psutil
 from os import listdir, path
 from random import randint, shuffle
 from importlib import import_module
@@ -65,7 +66,7 @@ def parse_entry(entry: tuple) -> str:
                 result += 'ABOVE'
             case 'l':
                 result += 'LIFTS, '
-            case 'b':
+            case 'g':
                 result += 'GROUP TOAST!'
             case 'c':
                 result += 'THIS BOT '
@@ -332,5 +333,6 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     
     print_history(history)
     print('\n|- Winner is:', queue[0], 'with', health[queue[0]], 'health!')
+    import os, psutil; print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
 
-game(max_health=6)
+game(max_health=6000)
