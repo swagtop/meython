@@ -333,6 +333,6 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     
     print_history(history)
     print('\n|- Winner is:', queue[0], 'with', health[queue[0]], 'health!')
-    import os, psutil; print(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+    import os, psutil; print('Process used', psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, 'MB')
 
 game(max_health=6)
