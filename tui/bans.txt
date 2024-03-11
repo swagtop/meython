@@ -1,0 +1,6 @@
+following are to be banned from botfiles:
+import
+__import__
+global
+globals()
+open()
