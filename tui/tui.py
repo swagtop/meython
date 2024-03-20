@@ -1,4 +1,5 @@
 import psutil
+from time import time
 from os import listdir, path
 from random import randint, shuffle
 from importlib import import_module
@@ -53,7 +54,7 @@ def load_bots():
     shuffle(queue)
 
 def parse_entry(entry: tuple) -> str:
-    result = f'{f'[{entry.bot}]' : >8} '
+    result = f'{f"[{entry.bot}]" : >8} '
     for character in entry.events:
         match character:
             case 'b':
@@ -104,8 +105,8 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     MEYER_DAMAGE = meyer_damage
     TIMEOUT_SECONDS = timeout_seconds
 
-    LogEntry = namedtuple(
-        'LogEntry',
+    Turn = namedtuple(
+        'Turn',
         ['bot', 'answer', 'events', 'previous']
     )
 
@@ -149,12 +150,12 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
         nonlocal history
         nonlocal round_start
         if round_start:
-            previous = LogEntry(None, 0, 'b', None)
+            previous = Turn(None, 0, 'b', None)
         else:
             previous = history[-1][-1]
         history = history[:-1] + (
             history[-1] + ((
-                LogEntry(
+                Turn(
                     bot, 
                     answer, 
                     events, 
@@ -335,4 +336,6 @@ def game(max_health=6, normal_damage=1, meyer_damage=2, timeout_seconds=1):
     print(f'\n|- Winner is [ {queue[0]} ] at {health[queue[0]]} health!')
     import os, psutil; print('   Process used', psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, 'MB')
 
+start = time()
 game(max_health=6)
+print('TOOK:', (time() - start))

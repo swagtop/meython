@@ -6,8 +6,8 @@ def last_known(previous: tuple) -> int:
         current = current.previous
     return current.answer
 
-high_rolls = {11, 22, 33, 44, 55, 66, 31, 21}
-medium_rolls = {61, 62, 63, 64, 65}
+high_rolls = {22, 33, 44, 55, 66, 31, 21}
+medium_rolls = {61, 62, 63, 64, 65, 11}
 low_rolls = {41, 42, 43, 51, 52, 53, 54}
 
 roll_rank = [
